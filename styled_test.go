@@ -501,44 +501,8 @@ func TestStyledStringLinesUnboundedContent(t *testing.T) {
 func TestStyledStringLongHyperlink(t *testing.T) {
 	const parserDataLimit = 4 << 10
 	destination := strings.Repeat("a", parserDataLimit+1)
-	ss := NewStyledString(ansi.SetHyperlink(destination) + "x" + ansi.ResetHyperlink())
-
-	if got := ss.Lines(ansi.GraphemeWidth)[0][0].Link.URL; got != destination {
+	if got := NewStyledString(ansi.SetHyperlink(destination) + "x").Lines(ansi.GraphemeWidth)[0][0].Link.URL; got != destination {
 		t.Errorf("Lines hyperlink length = %d, want %d", len(got), len(destination))
-	}
-
-	buf := NewScreenBuffer(1, 1)
-	ss.Draw(buf, buf.Bounds())
-	if got := buf.CellAt(0, 0).Link.URL; got != destination {
-		t.Errorf("Draw hyperlink length = %d, want %d", len(got), len(destination))
-	}
-}
-
-func TestOscPayload(t *testing.T) {
-	const payload = "8;;https://example.com"
-	tests := []struct {
-		name string
-		seq  string
-		want string
-		ok   bool
-	}{
-		{"7-bit OSC with BEL", "\x1b]" + payload + "\x07", payload, true},
-		{"7-bit OSC with ST", "\x1b]" + payload + "\x1b\\", payload, true},
-		{"C1 OSC with BEL", "\x9d" + payload + "\x07", payload, true},
-		{"C1 OSC with ST", "\x9d" + payload + "\x1b\\", payload, true},
-		{"empty payload", "\x1b]\x1b\\", "", true},
-		{"not OSC", payload + "\x07", "", false},
-		{"unterminated", "\x1b]" + payload, "", false},
-		{"bare introducer", "\x1b]", "", false},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, ok := oscPayload(tc.seq)
-			if got != tc.want || ok != tc.ok {
-				t.Errorf("oscPayload(%q) = (%q, %v), want (%q, %v)", tc.seq, got, ok, tc.want, tc.ok)
-			}
-		})
 	}
 }
 

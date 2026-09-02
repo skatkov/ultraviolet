@@ -145,32 +145,6 @@ func terminated[T []byte | string](seq T) bool {
 	return n >= 2 && seq[n-1] == '\\' && seq[n-2] == ansi.ESC
 }
 
-func oscPayload[T []byte | string](seq T) (T, bool) {
-	var empty T
-	if !ansi.HasOscPrefix(seq) {
-		return empty, false
-	}
-
-	start := 2
-	if seq[0] == ansi.OSC {
-		start = 1
-	}
-	if len(seq) == start {
-		return empty, false
-	}
-
-	end := len(seq)
-	switch {
-	case seq[end-1] == ansi.BEL:
-		end--
-	case terminated(seq):
-		end -= 2
-	default:
-		return empty, false
-	}
-	return seq[start:end], true
-}
-
 func printString[T []byte | string](
 	s Screen,
 	m WidthMethod,
@@ -179,6 +153,9 @@ func printString[T []byte | string](
 	truncate bool, tail string,
 ) (lines []Line) {
 	p := ansi.GetParser()
+	if len(str) > 4<<10 {
+		p.SetDataSize(len(str))
+	}
 	defer ansi.PutParser(p)
 
 	var tailc Cell
@@ -278,11 +255,9 @@ func printString[T []byte | string](
 			case ansi.HasCsiPrefix(seq) && p.Command() == 'm':
 				// SGR - Select Graphic Rendition
 				ReadStyle(p.Params(), &style)
-			case ansi.HasOscPrefix(seq) && p.Command() == 8:
+			case ansi.HasOscPrefix(seq) && p.Command() == 8 && (seq[len(seq)-1] == ansi.BEL || terminated(seq)):
 				// Hyperlinks
-				if data, ok := oscPayload(seq); ok {
-					ReadLink([]byte(data), &link)
-				}
+				ReadLink(p.Data(), &link)
 			case ansi.Equal(seq, T("\n")):
 				if s == nil {
 					// When building lines, we need to ensure empty lines are represented.
