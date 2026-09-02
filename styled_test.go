@@ -524,10 +524,8 @@ func TestOscPayload(t *testing.T) {
 	}{
 		{"7-bit OSC with BEL", "\x1b]" + payload + "\x07", payload, true},
 		{"7-bit OSC with ST", "\x1b]" + payload + "\x1b\\", payload, true},
-		{"7-bit OSC with C1 ST", "\x1b]" + payload + "\x9c", payload, true},
 		{"C1 OSC with BEL", "\x9d" + payload + "\x07", payload, true},
 		{"C1 OSC with ST", "\x9d" + payload + "\x1b\\", payload, true},
-		{"C1 OSC with C1 ST", "\x9d" + payload + "\x9c", payload, true},
 		{"empty payload", "\x1b]\x1b\\", "", true},
 		{"not OSC", payload + "\x07", "", false},
 		{"unterminated", "\x1b]" + payload, "", false},

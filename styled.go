@@ -161,9 +161,9 @@ func oscPayload[T []byte | string](seq T) (T, bool) {
 
 	end := len(seq)
 	switch {
-	case seq[end-1] == ansi.BEL || seq[end-1] == ansi.ST:
+	case seq[end-1] == ansi.BEL:
 		end--
-	case end-start >= 2 && seq[end-2] == ansi.ESC && ansi.HasStPrefix(seq[end-2:]):
+	case terminated(seq):
 		end -= 2
 	default:
 		return empty, false
