@@ -485,6 +485,19 @@ func TestStyledStringEmptyLines(t *testing.T) {
 	}
 }
 
+func TestStyledStringLines(t *testing.T) {
+	const destination = "https://example.com"
+	input := "\x1b[31mab\x1b[0m\n" + ansi.SetHyperlink(destination, "") + "界" + ansi.ResetHyperlink()
+	lines := NewStyledString(input).Lines(ansi.GraphemeWidth)
+
+	if got := Lines(lines).String(); got != "ab\n界" {
+		t.Fatalf("Lines().String() = %q, want %q", got, "ab\n界")
+	}
+	if cell := lines[1][0]; cell.Width != 2 || cell.Link.URL != destination {
+		t.Fatalf("linked cell = %#v, want width 2 and link %q", cell, destination)
+	}
+}
+
 func newWcCell(s string, style *Style, link *Link) Cell {
 	c := NewCell(ansi.WcWidth, s)
 	if style != nil {
