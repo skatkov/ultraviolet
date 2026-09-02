@@ -485,7 +485,7 @@ func TestStyledStringEmptyLines(t *testing.T) {
 	}
 }
 
-func TestStyledStringLines(t *testing.T) {
+func TestStyledStringLinesUnboundedContent(t *testing.T) {
 	const destination = "https://example.com"
 	input := "\x1b[31mab\x1b[0m\n" + ansi.SetHyperlink(destination, "") + "界" + ansi.ResetHyperlink()
 	lines := NewStyledString(input).Lines(ansi.GraphemeWidth)
