@@ -498,6 +498,36 @@ func TestStyledStringLinesUnboundedContent(t *testing.T) {
 	}
 }
 
+func TestOscPayload(t *testing.T) {
+	const payload = "8;;https://example.com"
+	tests := []struct {
+		name string
+		seq  string
+		want string
+		ok   bool
+	}{
+		{"7-bit OSC with BEL", "\x1b]" + payload + "\x07", payload, true},
+		{"7-bit OSC with ST", "\x1b]" + payload + "\x1b\\", payload, true},
+		{"7-bit OSC with C1 ST", "\x1b]" + payload + "\x9c", payload, true},
+		{"C1 OSC with BEL", "\x9d" + payload + "\x07", payload, true},
+		{"C1 OSC with ST", "\x9d" + payload + "\x1b\\", payload, true},
+		{"C1 OSC with C1 ST", "\x9d" + payload + "\x9c", payload, true},
+		{"empty payload", "\x1b]\x1b\\", "", true},
+		{"not OSC", payload + "\x07", "", false},
+		{"unterminated", "\x1b]" + payload, "", false},
+		{"bare introducer", "\x1b]", "", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := oscPayload(tc.seq)
+			if got != tc.want || ok != tc.ok {
+				t.Errorf("oscPayload(%q) = (%q, %v), want (%q, %v)", tc.seq, got, ok, tc.want, tc.ok)
+			}
+		})
+	}
+}
+
 func newWcCell(s string, style *Style, link *Link) Cell {
 	c := NewCell(ansi.WcWidth, s)
 	if style != nil {

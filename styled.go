@@ -145,6 +145,32 @@ func terminated[T []byte | string](seq T) bool {
 	return n >= 2 && seq[n-1] == '\\' && seq[n-2] == ansi.ESC
 }
 
+func oscPayload[T []byte | string](seq T) (T, bool) {
+	var empty T
+	if !ansi.HasOscPrefix(seq) {
+		return empty, false
+	}
+
+	start := 2
+	if seq[0] == ansi.OSC {
+		start = 1
+	}
+	if len(seq) == start {
+		return empty, false
+	}
+
+	end := len(seq)
+	switch {
+	case seq[end-1] == ansi.BEL || seq[end-1] == ansi.ST:
+		end--
+	case end-start >= 2 && seq[end-2] == ansi.ESC && ansi.HasStPrefix(seq[end-2:]):
+		end -= 2
+	default:
+		return empty, false
+	}
+	return seq[start:end], true
+}
+
 func printString[T []byte | string](
 	s Screen,
 	m WidthMethod,
@@ -254,9 +280,9 @@ func printString[T []byte | string](
 				ReadStyle(p.Params(), &style)
 			case ansi.HasOscPrefix(seq) && p.Command() == 8:
 				// Hyperlinks
-				data := strings.TrimPrefix(strings.TrimPrefix(string(seq), "\x1b]"), "\x9d")
-				data = strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(data, "\a"), "\x9c"), "\x1b\\")
-				ReadLink([]byte(data), &link)
+				if data, ok := oscPayload(seq); ok {
+					ReadLink([]byte(data), &link)
+				}
 			case ansi.Equal(seq, T("\n")):
 				if s == nil {
 					// When building lines, we need to ensure empty lines are represented.
