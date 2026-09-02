@@ -501,8 +501,46 @@ func TestStyledStringLinesUnboundedContent(t *testing.T) {
 func TestStyledStringLongHyperlink(t *testing.T) {
 	const parserDataLimit = 4 << 10
 	destination := strings.Repeat("a", parserDataLimit+1)
-	if got := NewStyledString(ansi.SetHyperlink(destination) + "x").Lines(ansi.GraphemeWidth)[0][0].Link.URL; got != destination {
+	ss := NewStyledString(ansi.SetHyperlink(destination) + "x")
+	if got := ss.Lines(ansi.GraphemeWidth)[0][0].Link.URL; got != destination {
 		t.Errorf("Lines hyperlink length = %d, want %d", len(got), len(destination))
+	}
+
+	buf := NewScreenBuffer(1, 1)
+	ss.Draw(buf, buf.Bounds())
+	if got := buf.CellAt(0, 0).Link.URL; got != destination {
+		t.Errorf("Draw hyperlink length = %d, want %d", len(got), len(destination))
+	}
+}
+
+func TestStyledStringHyperlinkTermination(t *testing.T) {
+	const destination = "https://example.com"
+	linked := Link{URL: destination}
+	tests := []struct {
+		name string
+		seq  string
+		want Link
+	}{
+		{"7-bit OSC with BEL", "\x1b]8;;" + destination + "\a", linked},
+		{"7-bit OSC with ST", "\x1b]8;;" + destination + "\x1b\\", linked},
+		{"C1 OSC with BEL", "\x9d8;;" + destination + "\a", linked},
+		{"C1 OSC with ST", "\x9d8;;" + destination + "\x1b\\", linked},
+		{"7-bit OSC with C1 ST", "\x1b]8;;" + destination + "\x9c", Link{}},
+		{"C1 OSC with C1 ST", "\x9d8;;" + destination + "\x9c", Link{}},
+		{"unterminated 7-bit OSC", "\x1b]8;;" + destination + "\x1b[31m", Link{}},
+		{"unterminated C1 OSC", "\x9d8;;" + destination + "\x1b[31m", Link{}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			lines := NewStyledString(tc.seq + "x").Lines(ansi.GraphemeWidth)
+			if len(lines) != 1 || len(lines[0]) != 1 {
+				t.Fatalf("Lines = %#v, want one cell", lines)
+			}
+			if got := lines[0][0].Link; got != tc.want {
+				t.Errorf("link = %#v, want %#v", got, tc.want)
+			}
+		})
 	}
 }
 
