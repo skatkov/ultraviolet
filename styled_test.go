@@ -509,6 +509,15 @@ func newWcCell(s string, style *Style, link *Link) Cell {
 	return *c
 }
 
+func TestReadLinkAllowsSemicolonsInURL(t *testing.T) {
+	var link Link
+	ReadLink([]byte("8;id=123;Other;Guide.md"), &link)
+
+	if link.Params != "id=123" || link.URL != "Other;Guide.md" {
+		t.Fatalf("ReadLink() = %#v, want params %q and URL %q", link, "id=123", "Other;Guide.md")
+	}
+}
+
 // ASCII-heavy line: the common case. Guards the printString re-decode
 // pre-filter (str[1] >= 0xc0) from regressing plain-text draws.
 func BenchmarkPrintStringASCII(b *testing.B) {

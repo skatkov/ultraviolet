@@ -440,7 +440,7 @@ func ReadStyle(params ansi.Params, pen *Style) {
 
 // ReadLink reads a hyperlink escape sequence from a data buffer into link.
 func ReadLink(p []byte, link *Link) {
-	params := bytes.Split(p, []byte{';'})
+	params := bytes.SplitN(p, []byte{';'}, 3)
 	if len(params) != 3 {
 		return
 	}
