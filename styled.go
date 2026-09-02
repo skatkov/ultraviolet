@@ -254,7 +254,9 @@ func printString[T []byte | string](
 				ReadStyle(p.Params(), &style)
 			case ansi.HasOscPrefix(seq) && p.Command() == 8:
 				// Hyperlinks
-				ReadLink(p.Data(), &link)
+				data := strings.TrimPrefix(strings.TrimPrefix(string(seq), "\x1b]"), "\x9d")
+				data = strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(data, "\a"), "\x9c"), "\x1b\\")
+				ReadLink([]byte(data), &link)
 			case ansi.Equal(seq, T("\n")):
 				if s == nil {
 					// When building lines, we need to ensure empty lines are represented.
