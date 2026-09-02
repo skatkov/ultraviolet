@@ -486,7 +486,7 @@ func TestStyledStringEmptyLines(t *testing.T) {
 }
 
 func TestStyledStringLinesUnboundedContent(t *testing.T) {
-	destination := strings.Repeat("a", 5000)
+	const destination = "https://example.com"
 	input := "\x1b[31mab\x1b[0m\n" + ansi.SetHyperlink(destination, "") + "界" + ansi.ResetHyperlink()
 	lines := NewStyledString(input).Lines(ansi.GraphemeWidth)
 
@@ -495,6 +495,22 @@ func TestStyledStringLinesUnboundedContent(t *testing.T) {
 	}
 	if cell := lines[1][0]; cell.Width != 2 || cell.Link.URL != destination {
 		t.Fatalf("linked cell = %#v, want width 2 and link %q", cell, destination)
+	}
+}
+
+func TestStyledStringLongHyperlink(t *testing.T) {
+	const parserDataLimit = 4 << 10
+	destination := strings.Repeat("a", parserDataLimit+1)
+	ss := NewStyledString(ansi.SetHyperlink(destination) + "x" + ansi.ResetHyperlink())
+
+	if got := ss.Lines(ansi.GraphemeWidth)[0][0].Link.URL; got != destination {
+		t.Errorf("Lines hyperlink length = %d, want %d", len(got), len(destination))
+	}
+
+	buf := NewScreenBuffer(1, 1)
+	ss.Draw(buf, buf.Bounds())
+	if got := buf.CellAt(0, 0).Link.URL; got != destination {
+		t.Errorf("Draw hyperlink length = %d, want %d", len(got), len(destination))
 	}
 }
 
