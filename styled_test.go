@@ -513,6 +513,38 @@ func TestStyledStringLongHyperlink(t *testing.T) {
 	}
 }
 
+func TestOscPayload(t *testing.T) {
+	const payload = "8;;https://example.com"
+	bel := string([]byte{ansi.BEL})
+	osc := string([]byte{ansi.OSC})
+	st := string([]byte{ansi.ST})
+	tests := []struct {
+		name string
+		seq  string
+		want string
+		ok   bool
+	}{
+		{"7-bit OSC with BEL", "\x1b]" + payload + bel, payload, true},
+		{"7-bit OSC with ST", "\x1b]" + payload + "\x1b\\", payload, true},
+		{"C1 OSC with BEL", osc + payload + bel, payload, true},
+		{"C1 OSC with ST", osc + payload + "\x1b\\", payload, true},
+		{"empty payload", "\x1b]" + bel, "", true},
+		{"not OSC", payload + bel, "", false},
+		{"bare introducer", "\x1b]", "", false},
+		{"unterminated", "\x1b]" + payload, "", false},
+		{"C1 ST", "\x1b]" + payload + st, "", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := oscPayload(tc.seq)
+			if got != tc.want || ok != tc.ok {
+				t.Errorf("oscPayload(%q) = (%q, %v), want (%q, %v)", tc.seq, got, ok, tc.want, tc.ok)
+			}
+		})
+	}
+}
+
 func TestStyledStringHyperlinkTermination(t *testing.T) {
 	const destination = "https://example.com"
 	linked := Link{URL: destination}
