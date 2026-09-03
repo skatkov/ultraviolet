@@ -155,9 +155,6 @@ func oscPayload[T []byte | string](seq T) (T, bool) {
 	if seq[0] == ansi.OSC {
 		start = 1
 	}
-	if len(seq) <= start {
-		return zero, false
-	}
 
 	end := len(seq)
 	switch {
