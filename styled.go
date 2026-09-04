@@ -145,6 +145,9 @@ func terminated[T []byte | string](seq T) bool {
 	return n >= 2 && seq[n-1] == '\\' && seq[n-2] == ansi.ESC
 }
 
+// oscPayload extracts data from a terminated OSC sequence. DecodeSequence
+// returns the complete sequence even when the pooled parser's 4 KiB data
+// buffer truncates Parser.Data, so using seq avoids resizing pooled buffers.
 func oscPayload[T []byte | string](seq T) (T, bool) {
 	var zero T
 	if !ansi.HasOscPrefix(seq) {
